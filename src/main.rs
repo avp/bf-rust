@@ -15,11 +15,10 @@ fn get_prog() -> String {
   };
 
   let mut prog = String::new();
-  match file.read_to_string(&mut prog) {
-    Err(_) => panic!("Failed to read from file"),
-    _ => (),
-  };
-  return prog;
+  if let Err(e) = file.read_to_string(&mut prog) {
+    println!("{}", e.to_string());
+  }
+  prog
 }
 
 fn main() {

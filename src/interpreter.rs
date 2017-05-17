@@ -1,6 +1,7 @@
 use std::io;
 use std::io::Write;
 use std::collections::HashMap;
+use std::io::Read;
 
 const TAPE_LEN: usize = 30000;
 
@@ -10,7 +11,7 @@ enum Bracket {
   Close(usize),
 }
 
-fn make_mapping(prog: &String) -> HashMap<Bracket, Bracket> {
+fn make_mapping(prog: &str) -> HashMap<Bracket, Bracket> {
   let mut stack: Vec<usize> = vec![];
   let mut result: HashMap<Bracket, Bracket> = HashMap::new();
   for (i, c) in prog.chars().enumerate() {
@@ -30,16 +31,13 @@ fn make_mapping(prog: &String) -> HashMap<Bracket, Bracket> {
       _ => {}
     }
   }
-  match stack.pop() {
-    Some(i) => {
-      panic!("Mismatched [ at {}", i);
-    }
-    None => {}
+  if let Some(i) = stack.pop() {
+    panic!("Mismatched [ at {}", i);
   }
-  return result;
+  result
 }
 
-pub fn interpret(prog: &String) {
+pub fn interpret(prog: &str) {
   let chars: Vec<char> = prog.chars().collect();
   let prog_len = prog.len();
 
@@ -47,7 +45,7 @@ pub fn interpret(prog: &String) {
   let mut cursor: usize = 0;
   let mut ip: usize = 0;
 
-  let matches = make_mapping(&prog);
+  let matches = make_mapping(prog);
 
   while ip < prog_len {
     match chars[ip] {
@@ -64,30 +62,33 @@ pub fn interpret(prog: &String) {
         cursor -= 1;
       }
       '+' => {
-        tape[cursor] = tape[cursor] + 1;
+        tape[cursor] += 1;
       }
       '-' => {
-        tape[cursor] = tape[cursor] - 1;
+        tape[cursor] -= 1;
       }
       '.' => {
         print!("{}", tape[cursor] as char);
-        io::stdout().flush().ok().expect("Could not flush stdout");
+        io::stdout().flush().expect("Could not flush stdout");
       }
       ',' => {
-        print!(", operator unimplemented");
+        match io::stdin().bytes().next() {
+          Some(Ok(c)) => tape[cursor] = c,
+          _ => panic!("Failed to read input"),
+        }
       }
       '[' => {
         if tape[cursor] == 0 {
-          match matches.get(&Bracket::Open(ip)).unwrap() {
-            &Bracket::Close(next) => ip = next,
+          match matches[&Bracket::Open(ip)] {
+            Bracket::Close(next) => ip = next,
             _ => panic!("Invalid bracket match"),
           }
         }
       }
       ']' => {
         if tape[cursor] != 0 {
-          match matches.get(&Bracket::Close(ip)).unwrap() {
-            &Bracket::Open(next) => ip = next,
+          match matches[&Bracket::Close(ip)] {
+            Bracket::Open(next) => ip = next,
             _ => panic!("Invalid bracket match"),
           }
         }
