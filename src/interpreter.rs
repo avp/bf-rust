@@ -62,10 +62,18 @@ pub fn interpret(prog: &str) {
         cursor -= 1;
       }
       '+' => {
-        tape[cursor] += 1;
+        tape[cursor] = if tape[cursor] == 0xff {
+          0
+        } else {
+          tape[cursor] + 1
+        }
       }
       '-' => {
-        tape[cursor] -= 1;
+        tape[cursor] = if tape[cursor] == 0 {
+          0xff
+        } else {
+          tape[cursor] - 1
+        }
       }
       '.' => {
         print!("{}", tape[cursor] as char);
